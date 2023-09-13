@@ -186,37 +186,50 @@ class ASTModel(nn.Module):
         x = self.mlp_head(x)
         return x
 
+from M_utils import MyDataset
+import torch.utils.data as data
+import transforms as Trans
 if __name__ == '__main__':
-    if os.path.exists('./checkpoint') is False:
-        os.makedirs('./checkpoint')
-    input_tdim = 512
-    ast_mdl = ASTModel(input_tdim=input_tdim)
-    test_input = torch.rand([10, input_tdim, 128])
-    test_output = ast_mdl(test_input)
-    # output should be in shape [10, 527], i.e., 10 samples, each with prediction of 527 classes.
-    print(test_output.shape)
-    torch.save(ast_mdl,'try.pth')
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    ast_mdl = ASTModel(label_dim=2, fstride=10, tstride=10,
+                                  input_fdim=128, input_tdim=149,
+                                  imagenet_pretrain=True,
+                                  audioset_pretrain=False, model_size='base224').to(device)
+    data_train = '/usr/data/local/duanyuchi/python_data/multimodal/All_data/c3_s3/train_1.txt'
+    video_transform_train = Trans.Compose([
+        Trans.RandomHorizontalFlip(),
+        Trans.RandomRotate(),
+        Trans.ToTensor(255)])
+    train_dataset = MyDataset.Multi_dataset(data_train,
+                                            video_transform=video_transform_train,
+                                            audio_transform=True,
+                                            data_type='audio')
+    train_loader = data.DataLoader(dataset=train_dataset,
+                                   batch_size=4,
+                                   shuffle=True,
+                                   num_workers=2,
+                                   pin_memory=True,
+                                   )
+    for step, data in enumerate(train_loader):
+        wav, label = data
+        wav = wav.to(device)
+        print('wav-shape',wav.shape)
+        print('wav-type',wav.type())
+        pred =ast_mdl(wav)
+        print(pred.shape)
 
-    input_tdim = 256
-    ast_mdl = ASTModel(input_tdim=input_tdim,label_dim=50, audioset_pretrain=False,imagenet_pretrain=True)
-    # input a batch of 10 spectrogram, each with 512 time frames and 128 frequency bins
-    test_input = torch.rand([10, input_tdim, 128])
-    test_output = ast_mdl(test_input)
-    # output should be in shape [10, 50], i.e., 10 samples, each with prediction of 50 classes.
-    print(test_output.shape)
 
 
-# if __name__ == '__main__':
-#     device=torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
-#
-#     audio_model=ASTModel(label_dim=50,fstride=16,tstride=16,input_fdim=128,input_tdim=512,
-#                                     imagenet_pretrain=False,audioset_pretrain=False,model_size='tiny224')
-#
-#     # summary(audio_model,(1024,128))
-#
-#     for name in audio_model.state_dict():
-#         print(name)
-#     print(audio_model.state_dict()['v.blocks.0.attn.qkv.weight'])
+    # input_tdim = 128
+    # ast_mdl = ASTModel(input_tdim=input_tdim,label_dim=2, input_fdim=149,audioset_pretrain=False,imagenet_pretrain=True)
+    # # input a batch of 10 spectrogram, each with 512 time frames and 128 frequency bins
+    # test_input = torch.rand([64, input_tdim, 149])
+    # test_output = ast_mdl(test_input)
+    # # output should be in shape [10, 50], i.e., 10 samples, each with prediction of 50 classes.
+    # print(test_output.shape)
+
+
+
 
 
 

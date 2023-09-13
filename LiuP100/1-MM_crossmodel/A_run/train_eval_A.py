@@ -27,7 +27,8 @@ def train_one_epoch_A(model, device, data_loader, loss_f, optimizer, epoch):
         sample_num += label.shape[0]
         recall_num += torch.sum(label == 1)
         with autocast():
-            pred = model(wav)[0]  # 因为代码里有这个feature
+            # pred = model(wav)[0]  # 因为代码里有这个feature
+            pred = model(wav)  # 换成ast的模型之后，这里需要修改了
             pred_classes = torch.max(pred, dim=1)[1]
             accu_num += torch.eq(pred_classes, label).sum()
             recall_pos += torch.sum((pred_classes == 1) & (label == 1))
@@ -69,7 +70,8 @@ def eval_one_epoch_A(model, data_loader, device, loss_f, epoch):
         label = label.to(device)
         sample_num += label.shape[0]
         recall_num += torch.sum(label == 1)
-        pred = model(wav)[0]
+        # pred = model(wav)[0]   ## 因为代码里有这个feature,这个适用之前的代码，主要是看博客说如果要做融合，吧每一个模态的倒数第二层拿出来效果会更好。
+        pred = model(wav)  #正常的代码还是这种直接pre的
         pred_classes = torch.max(pred, dim=1)[1]
         accu_num += torch.eq(pred_classes, label).sum()
         recall_pos += torch.sum((label == 1) & (pred_classes == 1))
@@ -79,8 +81,13 @@ def eval_one_epoch_A(model, data_loader, device, loss_f, epoch):
 
         l = accu_loss.item() / (step + 1)
         acc = accu_num.item() / sample_num
+        if (pre_num.item() == 0 | recall_num.item()==0):
+            continue
         precision = recall_pos.item() / pre_num.item()
         recall = recall_pos.item() / recall_num.item()
+        # if(precision+recall==0):
+        #     continue
+
         f1 = F1_score(precision, recall)
         data_loader.desc = "[A_eval_epoch {}]  loss:{:.3f}, acc:{:.3f},pre:{:.3f}, recall:{:.3f},  F1-score:{:.3f}".format(epoch, l, acc, precision, recall, f1)
     return l, acc, precision, recall, f1

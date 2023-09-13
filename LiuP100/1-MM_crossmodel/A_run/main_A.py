@@ -17,7 +17,7 @@ import torch.utils.data as data
 import model_load
 from train_eval_A import train_one_epoch_A, eval_one_epoch_A
 from torch.utils.tensorboard import SummaryWriter
-from Model import AudioNet1
+from Model import AudioNet1,A_ast
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--data_train', type=str, default='', help='训练数据的路径')
@@ -39,7 +39,7 @@ parser.add_argument('--learning_rate', type=int, default=0.01, help='')# 0.05
 parser.add_argument('--model', type=str, default='audio', help='audio | visual | audiovisual')
 # parser.add_argument('--data-class', type=str, default='p', help='p | n | nt')
 parser.add_argument('--device', type=str, default='cuda:0', help='')
-parser.add_argument('--batch_size', type=int, default='64', help='')
+parser.add_argument('--batch_size', type=int, default='2', help='')
 
 
 def main(opts, flod):
@@ -50,7 +50,7 @@ def main(opts, flod):
     print(opts)
 
     tb_writer = SummaryWriter(
-        '/usr/data/local/duanyuchi/python_data/multimodal/All_data/c3_s3/runs/a1/flod_{:d}'.format(flod))
+        '/usr/data/local/duanyuchi/python_data/multimodal/All_data/c3_s3/runs/a2/flod_{:d}'.format(flod))
 
     if opts.model == 'audio':
 
@@ -106,9 +106,14 @@ def main(opts, flod):
                                   num_workers=nw,
                                   pin_memory=True,
                                   )
-    # model=multimodalcnn.EfficientFaceTemporal([4, 8, 4], [29, 116, 232, 464, 1024], 2, 18).to(device)
-    model = AudioNet1.Audio_net1(device=device, in_feature=1, hidden_feature=64, out_feature=128,
-                                 input_size=18, num_layers=2, hidden_size=18, num_class=2).to(device)
+
+    # model = AudioNet1.Audio_net1(device=device, in_feature=1, hidden_feature=64, out_feature=128,
+    #                              input_size=18, num_layers=2, hidden_size=18, num_class=2).to(device)
+    # model=A_ast.ASTModel(input_tdim=149,input_fdim=128,label_dim=2,audioset_pretrain=False,imagenet_pretrain=True)
+    model = A_ast.ASTModel(label_dim=2, fstride=10, tstride=10,
+                                  input_fdim=128, input_tdim=149,
+                                  imagenet_pretrain=True,
+                                  audioset_pretrain=False, model_size='base224').to(device)
 
     loss_f = nn.CrossEntropyLoss()
     loss_f = loss_f.to(device)
@@ -151,13 +156,13 @@ def main(opts, flod):
         checkpoint = {'state_dict': model.state_dict(),
                       }
         torch.save(checkpoint,
-                   '/usr/data/local/duanyuchi/python_data/multimodal/All_data/c3_s3/checkpoint/a1/flod_{}.pth'.format(flod))
+                   '/usr/data/local/duanyuchi/python_data/multimodal/All_data/c3_s3/checkpoint/a2/flod_{}.pth'.format(flod))
         if max_acc < eval_acc:
             max_acc = eval_acc
             max_epoch = epoch
             print("\033[0;32;40mAcc_max is updating,which is {}\033[0m".format(max_acc))
             torch.save(checkpoint,
-                       '/usr/data/local/duanyuchi/python_data/multimodal/All_data/c3_s3/checkpoint/a1/flod_{}_best{}_acc{:1f}.pth'.format(
+                       '/usr/data/local/duanyuchi/python_data/multimodal/All_data/c3_s3/checkpoint/a2/flod_{}_best{}_acc{:1f}.pth'.format(
                            flod, epoch, eval_acc))
 
         if (epoch - max_epoch > 30):
@@ -177,7 +182,8 @@ def set_seed(seed):
 if __name__ == '__main__':
     seed = 14
     set_seed(seed)
-    door = input('你把模型的参数修改好了吗:')
+    # door = input('你把模型的参数修改好了吗:')
+    door='yes'
     if door == 'yes':
         for i in range(10):
             opts = parser.parse_args()

@@ -69,7 +69,7 @@ def wav2fbank(filename):
     waveform = waveform - waveform.mean()
     fbank = torchaudio.compliance.kaldi.fbank(waveform, htk_compat=True, sample_frequency=sr, use_energy=False,
                                               frame_length=40,
-                                              window_type='hanning', num_mel_bins=64, dither=0.0,
+                                              window_type='hanning', num_mel_bins=128, dither=0.0,
                                               frame_shift=20)
     # print('fbank',fbank.shape)
     # print('333',fbank.shape)   #[149, 64]
