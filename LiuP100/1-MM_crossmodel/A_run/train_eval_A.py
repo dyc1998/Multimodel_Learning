@@ -81,7 +81,7 @@ def eval_one_epoch_A(model, data_loader, device, loss_f, epoch):
 
         l = accu_loss.item() / (step + 1)
         acc = accu_num.item() / sample_num
-        if (pre_num.item() == 0 | recall_num.item()==0):
+        if (pre_num.item() == 0 or recall_num.item()==0):
             continue
         precision = recall_pos.item() / pre_num.item()
         recall = recall_pos.item() / recall_num.item()
